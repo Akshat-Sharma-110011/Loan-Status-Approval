@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 secret.txt
+local_s3
+data/external
+data/interim
+data/processed
+data/raw
 
 # C extensions
 *.so
