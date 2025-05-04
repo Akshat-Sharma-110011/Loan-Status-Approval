@@ -55,7 +55,7 @@ def preprocess_dataframe(df, config, dataset_name='dataset'):
     logging.info(f"Applied Yeo-Johnson to: {skewed_cols}")
 
     # One-hot encoding
-    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True, dtype=int)
     logging.info(f"One-hot encoded categorical columns: {categorical_cols}")
     logging.info(f"Final shape of {dataset_name}: {df.shape}")
 

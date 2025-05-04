@@ -26,3 +26,6 @@ skewed_cols:
 
 norm_cols:
   - loan_int_rate
+
+target_cols:
+  - loan_status
