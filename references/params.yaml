@@ -1,0 +1,4 @@
+catboost:
+  iterations: 800
+  learning_rate: 0.16599409787390676
+  depth: 6
