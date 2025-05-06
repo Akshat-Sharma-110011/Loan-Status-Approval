@@ -9,8 +9,8 @@ stages:
       size: 2127
     - path: src/data/data_ingestion.py
       hash: md5
-      md5: f51d74cbeb89f9ae71e8718937e3f30a
-      size: 5772
+      md5: 00194718d20621b5e0e915e0bca36451
+      size: 7172
     - path: src/logger/__init__.py
       hash: md5
       md5: e70ae8c4d3135252a9e6b4b03c20ed05

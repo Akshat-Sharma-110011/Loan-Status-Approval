@@ -59,6 +59,19 @@ def fetch_data_from_s3(bucket_name: str, file_name: str) -> pd.DataFrame:
         raise
 
 
+def try_load_from_external(file_name: str) -> pd.DataFrame:
+    """Attempt to load data from ./data/external directory as fallback."""
+    section(f"Attempting to Load Data from External Directory", level=logging.INFO)
+    external_path = os.path.join("./data/external", file_name)
+
+    if not os.path.exists(external_path):
+        logging.error(f"Fallback file not found at {external_path}")
+        raise FileNotFoundError(f"Fallback file not found at {external_path}")
+
+    logging.info(f"Loading fallback data from {external_path}")
+    return load_data(external_path)
+
+
 def split_data(df: pd.DataFrame, test_size: float = 0.2, random_state: int = 42) -> tuple:
     """Split the data into training and testing sets."""
     section("Splitting Data into Train and Test Sets", level=logging.INFO)
@@ -106,6 +119,27 @@ def save_data(train_data: pd.DataFrame, test_data: pd.DataFrame, data_path: str)
         raise
 
 
+def get_data(bucket_name: str, file_name: str) -> pd.DataFrame:
+    """Get data with fallback mechanism: try S3 first, then local file."""
+    section("Fetching Data with Fallback Support", level=logging.INFO)
+    try:
+        # First try S3
+        logging.info("Attempting to fetch data from S3...")
+        return fetch_data_from_s3(bucket_name, file_name)
+    except Exception as s3_error:
+        # Log S3 error
+        logging.warning(f"S3 fetch failed: {s3_error}")
+        logging.info("Falling back to local data source...")
+
+        try:
+            # Try loading from external directory
+            return try_load_from_external(file_name)
+        except Exception as local_error:
+            logging.error(f"Local fallback also failed: {local_error}")
+            logging.error("All data sources failed. Cannot proceed.")
+            raise RuntimeError(f"Failed to fetch data from S3 and local fallback: {s3_error}; {local_error}")
+
+
 def main():
     section("Data Ingestion Pipeline Started", level=logging.INFO, char='*', length=80)
     try:
@@ -114,16 +148,12 @@ def main():
         test_size = 0.2
         logging.info(f"Using test_size={test_size}")
 
-        # Fetch data from S3
-        logging.info("Fetching data from S3")
+        # Parameters for data source
         bucket_name = "s3-loan-data-depository"
         file_name = "loan_data.csv"
 
-        # Use environment variables for authentication
-        df = fetch_data_from_s3(bucket_name, file_name)
-
-        # Alternative local data loading
-        # df = load_data('notebooks/loan_data.csv')
+        # Fetch data with fallback mechanism
+        df = get_data(bucket_name, file_name)
 
         # Split data
         train_data, test_data = split_data(df, test_size=test_size, random_state=42)
