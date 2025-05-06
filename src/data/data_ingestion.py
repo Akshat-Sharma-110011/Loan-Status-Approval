@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import boto3
+
 pd.set_option('future.no_silent_downcasting', True)
 
 import os
@@ -31,11 +32,18 @@ def load_data(data_url: str) -> pd.DataFrame:
         raise
 
 
-def fetch_data_from_s3(bucket_name: str, access_key: str, secret_key: str, file_name: str) -> pd.DataFrame:
-    """Fetch data from an S3 bucket."""
+def fetch_data_from_s3(bucket_name: str, file_name: str) -> pd.DataFrame:
+    """Fetch data from an S3 bucket using environment variables for authentication."""
     section(f"Fetching Data from S3 Bucket: {bucket_name}", level=logging.INFO)
     try:
         logging.info(f"Connecting to S3 bucket: {bucket_name}")
+
+        # Get credentials from environment variables
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+        if not access_key or not secret_key:
+            raise ValueError("AWS credentials not found in environment variables")
 
         # Use boto3 to connect to S3
         s3_client = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
@@ -109,13 +117,10 @@ def main():
         # Fetch data from S3
         logging.info("Fetching data from S3")
         bucket_name = "s3-loan-data-depository"
-        access_key = "AKIAUM3YSJQ4Y3XTD2WL"
-        secret_key = "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"
         file_name = "loan_data.csv"
 
-        # Note: In production code, these credentials should be stored securely
-        # and not hardcoded in the script
-        df = fetch_data_from_s3(bucket_name, access_key, secret_key, file_name)
+        # Use environment variables for authentication
+        df = fetch_data_from_s3(bucket_name, file_name)
 
         # Alternative local data loading
         # df = load_data('notebooks/loan_data.csv')
