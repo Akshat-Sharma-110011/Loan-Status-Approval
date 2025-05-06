@@ -4,10 +4,7 @@ __pycache__/
 *$py.class
 secret.txt
 local_s3
-data/external
-data/interim
-data/processed
-data/raw
+patterns.txt
 
 # C extensions
 *.so
