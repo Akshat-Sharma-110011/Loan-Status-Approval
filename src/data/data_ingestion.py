@@ -5,29 +5,8 @@ pd.set_option('future.no_silent_downcasting', True)
 
 import os
 from sklearn.model_selection import train_test_split
-import yaml
 from src.logger import logging, section
 from src.connections import s3_connection
-
-
-def load_params(params_path: str) -> dict:
-    """Load parameters from a YAML file."""
-    section("Loading Parameters", level=logging.INFO)
-    try:
-        with open(params_path, 'r') as file:
-            params = yaml.safe_load(file)
-        logging.info('Parameters retrieved from %s', params_path)
-        logging.debug('Parameter contents: %s', params)
-        return params
-    except FileNotFoundError:
-        logging.error('File not found: %s', params_path)
-        raise
-    except yaml.YAMLError as e:
-        logging.error('YAML error: %s', e)
-        raise
-    except Exception as e:
-        logging.error('Unexpected error: %s', e)
-        raise
 
 
 def load_data(data_url: str) -> pd.DataFrame:
@@ -98,7 +77,7 @@ def save_data(train_data: pd.DataFrame, test_data: pd.DataFrame, data_path: str)
         os.makedirs(raw_data_path, exist_ok=True)
 
         train_file_path = os.path.join(raw_data_path, "train.csv")
-        test_file_path = os.path.join(raw_data_path, "test_final.csv")
+        test_file_path = os.path.join(raw_data_path, "test.csv")
 
         logging.info(f"Saving training data ({train_data.shape}) to {train_file_path}")
         train_data.to_csv(train_file_path, index=False)
@@ -124,16 +103,14 @@ def main():
     try:
         # Define parameters
         logging.info("Setting up parameters")
-        # params = load_params(params_path='params.yaml')
-        # test_size = params['data_ingestion']['test_size']
         test_size = 0.2
         logging.info(f"Using test_size={test_size}")
 
         # Fetch data from S3
         logging.info("Fetching data from S3")
         bucket_name = "s3-loan-data-depository"
-        access_key = "AWS_ACCESS_KEY_ID"
-        secret_key = "AWS_SECRET_ACCESS_KEY"
+        access_key = "AKIAUM3YSJQ4Y3XTD2WL"
+        secret_key = "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"
         file_name = "loan_data.csv"
 
         # Note: In production code, these credentials should be stored securely

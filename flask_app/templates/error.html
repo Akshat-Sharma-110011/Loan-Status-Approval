@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Loan Approval Predictor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>Loan Approval Predictor</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/#about"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="/#contact"><i class="fas fa-envelope"></i> Contact</a></li>
+                    <li><a href="/metrics" target="_blank"><i class="fas fa-chart-bar"></i> Metrics</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="error-main">
+            <section class="error-container">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2>Oops! Something went wrong</h2>
+                <div class="error-message">
+                    <p>{{ error }}</p>
+                </div>
+
+                <div class="error-actions">
+                    <a href="/" class="btn btn-primary"><i class="fas fa-home"></i> Return to Home</a>
+                    <button id="show-details-btn" class="btn btn-secondary"><i class="fas fa-code"></i> Show Technical Details</button>
+                </div>
+
+                <div id="error-details" class="error-details" style="display: none;">
+                    <h3>Technical Details</h3>
+                    <div class="code-block">
+                        <pre>{{ trace }}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <section class="error-help">
+                <h3>Need Help?</h3>
+                <p>If this error persists, please contact our support team for assistance.</p>
+                <div class="contact-info">
+                    <div><i class="fas fa-envelope"></i> Email: support@loanpredictor.com</div>
+                    <div><i class="fas fa-phone"></i> Phone: (555) 123-4567</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Loan Approval Predictor</span>
+                </div>
+                <div class="footer-links">
+                    <a href="/">Home</a>
+                    <a href="/#about">About</a>
+                    <a href="/#contact">Contact</a>
+                    <a href="/metrics">Metrics</a>
+                </div>
+                <div class="footer-copyright">
+                    <p>&copy; 2025 Loan Approval Predictor. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('show-details-btn').addEventListener('click', function() {
+            const detailsSection = document.getElementById('error-details');
+            if (detailsSection.style.display === 'none') {
+                detailsSection.style.display = 'block';
+                this.innerHTML = '<i class="fas fa-code"></i> Hide Technical Details';
+            } else {
+                detailsSection.style.display = 'none';
+                this.innerHTML = '<i class="fas fa-code"></i> Show Technical Details';
+            }
+        });
+    </script>
+</body>
+</html>

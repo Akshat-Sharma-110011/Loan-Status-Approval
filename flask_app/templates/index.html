@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Approval Predictor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>Loan Approval Predictor</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/" class="active"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="#about"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="#contact"><i class="fas fa-envelope"></i> Contact</a></li>
+                    <li><a href="/metrics" target="_blank"><i class="fas fa-chart-bar"></i> Metrics</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-content">
+                    <h2>Check Your Loan Approval Chances</h2>
+                    <p>Our advanced AI model can predict whether your loan application will be approved based on your financial information.</p>
+                </div>
+                <div class="hero-image">
+                    <img src="/api/placeholder/500/300" alt="Loan Approval Illustration">
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-file-alt"></i> Loan Application Form</h3>
+                    </div>
+                    <div class="card-body">
+                        <form action="/predict" method="POST" id="loan-form">
+                            <div class="form-grid">
+                                <!-- Personal Information -->
+                                <div class="form-section-title">
+                                    <h4><i class="fas fa-user"></i> Personal Information</h4>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_age">Age</label>
+                                    <input type="number" id="person_age" name="person_age" value="{{ default_values.person_age }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_gender">Gender</label>
+                                    <select id="person_gender" name="person_gender" required>
+                                        <option value="Male" {% if default_values.person_gender == 'Male' %}selected{% endif %}>Male</option>
+                                        <option value="Female" {% if default_values.person_gender == 'Female' %}selected{% endif %}>Female</option>
+                                        <option value="Other" {% if default_values.person_gender == 'Other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_education">Education</label>
+                                    <select id="person_education" name="person_education" required>
+                                        <option value="High School" {% if default_values.person_education == 'High School' %}selected{% endif %}>High School</option>
+                                        <option value="Bachelor" {% if default_values.person_education == 'Bachelor' %}selected{% endif %}>Bachelor's Degree</option>
+                                        <option value="Master" {% if default_values.person_education == 'Master' %}selected{% endif %}>Master's Degree</option>
+                                        <option value="PhD" {% if default_values.person_education == 'PhD' %}selected{% endif %}>PhD</option>
+                                        <option value="Other" {% if default_values.person_education == 'Other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_income">Annual Income ($)</label>
+                                    <input type="number" id="person_income" name="person_income" value="{{ default_values.person_income }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_emp_exp">Employment Experience (years)</label>
+                                    <input type="number" id="person_emp_exp" name="person_emp_exp" step="0.1" value="{{ default_values.person_emp_exp }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="person_home_ownership">Home Ownership</label>
+                                    <select id="person_home_ownership" name="person_home_ownership" required>
+                                        <option value="MORTGAGE" {% if default_values.person_home_ownership == 'MORTGAGE' %}selected{% endif %}>Mortgage</option>
+                                        <option value="OWN" {% if default_values.person_home_ownership == 'OWN' %}selected{% endif %}>Own</option>
+                                        <option value="RENT" {% if default_values.person_home_ownership == 'RENT' %}selected{% endif %}>Rent</option>
+                                        <option value="OTHER" {% if default_values.person_home_ownership == 'OTHER' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Loan Details -->
+                                <div class="form-section-title">
+                                    <h4><i class="fas fa-money-bill-wave"></i> Loan Details</h4>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="loan_amnt">Loan Amount ($)</label>
+                                    <input type="number" id="loan_amnt" name="loan_amnt" value="{{ default_values.loan_amnt }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="loan_intent">Loan Purpose</label>
+                                    <select id="loan_intent" name="loan_intent" required>
+                                        <option value="PERSONAL" {% if default_values.loan_intent == 'PERSONAL' %}selected{% endif %}>Personal</option>
+                                        <option value="EDUCATION" {% if default_values.loan_intent == 'EDUCATION' %}selected{% endif %}>Education</option>
+                                        <option value="MEDICAL" {% if default_values.loan_intent == 'MEDICAL' %}selected{% endif %}>Medical</option>
+                                        <option value="HOME_IMPROVEMENT" {% if default_values.loan_intent == 'HOME_IMPROVEMENT' %}selected{% endif %}>Home Improvement</option>
+                                        <option value="DEBT_CONSOLIDATION" {% if default_values.loan_intent == 'DEBT_CONSOLIDATION' %}selected{% endif %}>Debt Consolidation</option>
+                                        <option value="BUSINESS" {% if default_values.loan_intent == 'BUSINESS' %}selected{% endif %}>Business</option>
+                                        <option value="OTHER" {% if default_values.loan_intent == 'OTHER' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="loan_int_rate">Interest Rate (%)</label>
+                                    <input type="number" id="loan_int_rate" name="loan_int_rate" step="0.01" value="{{ default_values.loan_int_rate }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="loan_percent_income">Loan as % of Income</label>
+                                    <input type="number" id="loan_percent_income" name="loan_percent_income" step="0.1" value="{{ default_values.loan_percent_income }}" required>
+                                    <div class="range-slider">
+                                        <input type="range" min="0" max="100" value="{{ default_values.loan_percent_income }}" class="slider" id="percent_income_slider">
+                                    </div>
+                                </div>
+
+                                <!-- Credit Information -->
+                                <div class="form-section-title">
+                                    <h4><i class="fas fa-credit-card"></i> Credit Information</h4>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cb_person_cred_hist_length">Credit History Length (years)</label>
+                                    <input type="number" id="cb_person_cred_hist_length" name="cb_person_cred_hist_length" value="{{ default_values.cb_person_cred_hist_length }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="credit_score">Credit Score</label>
+                                    <input type="number" id="credit_score" name="credit_score" min="300" max="850" value="{{ default_values.credit_score }}" required>
+                                    <div class="range-slider">
+                                        <input type="range" min="300" max="850" value="{{ default_values.credit_score }}" class="slider" id="credit_score_slider">
+                                        <div class="score-marks">
+                                            <span>Poor</span>
+                                            <span>Fair</span>
+                                            <span>Good</span>
+                                            <span>V.Good</span>
+                                            <span>Excellent</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="previous_loan_defaults_on_file">Previous Loan Defaults</label>
+                                    <select id="previous_loan_defaults_on_file" name="previous_loan_defaults_on_file" required>
+                                        <option value="No" {% if default_values.previous_loan_defaults_on_file == 'No' %}selected{% endif %}>No</option>
+                                        <option value="Yes" {% if default_values.previous_loan_defaults_on_file == 'Yes' %}selected{% endif %}>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Predict Approval</button>
+                                <button type="reset" class="btn btn-secondary"><i class="fas fa-redo"></i> Reset Form</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <section id="about" class="about-section">
+                <h3>About This Predictor</h3>
+                <div class="feature-grid">
+                    <div class="feature">
+                        <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                        <h4>AI-Powered</h4>
+                        <p>Our model uses advanced machine learning algorithms to predict loan approval with high accuracy.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                        <h4>Secure</h4>
+                        <p>Your data is processed securely and not stored after prediction.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                        <h4>Fast Results</h4>
+                        <p>Get instant prediction results to help you plan your financial decisions.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="contact-section">
+                <h3>Contact Us</h3>
+                <p>If you have any questions or feedback about our service, please reach out to us.</p>
+                <div class="contact-info">
+                    <div><i class="fas fa-envelope"></i> Email: akshatsharma.business.1310@gmail.com</div>
+                    <div><i class="fas fa-phone"></i> Phone: (+91) 7982063309</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Loan Approval Predictor</span>
+                </div>
+                <div class="footer-links">
+                    <a href="/">Home</a>
+                    <a href="#about">About</a>
+                    <a href="#contact">Contact</a>
+                    <a href="/metrics">Metrics</a>
+                </div>
+                <div class="footer-copyright">
+                    <p>&copy; 2025 Loan Approval Predictor. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Connect sliders to their respective inputs
+        document.getElementById('percent_income_slider').addEventListener('input', function() {
+            document.getElementById('loan_percent_income').value = this.value;
+        });
+
+        document.getElementById('loan_percent_income').addEventListener('input', function() {
+            document.getElementById('percent_income_slider').value = this.value;
+        });
+
+        document.getElementById('credit_score_slider').addEventListener('input', function() {
+            document.getElementById('credit_score').value = this.value;
+        });
+
+        document.getElementById('credit_score').addEventListener('input', function() {
+            document.getElementById('credit_score_slider').value = this.value;
+        });
+    </script>
+</body>
+</html>

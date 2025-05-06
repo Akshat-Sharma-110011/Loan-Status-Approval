@@ -1,0 +1,49 @@
+{
+    "model_type": "CatBoostClassifier",
+    "training_date": "2025-05-07 01:14:31",
+    "model_version": "1.0",
+    "metrics": {
+        "accuracy": 0.9311111111111111,
+        "precision": 0.8661749209694415,
+        "recall": 0.817910447761194,
+        "f1": 0.8413510747185261,
+        "roc_auc": 0.9761337091367199
+    },
+    "parameters": {
+        "iterations": 800,
+        "learning_rate": 0.167,
+        "depth": 6,
+        "l2_leaf_reg": 3,
+        "loss_function": "Logloss",
+        "random_seed": 42,
+        "verbose": 100,
+        "eval_metric": "AUC",
+        "early_stopping_rounds": 50
+    },
+    "features": [
+        "person_age",
+        "person_income",
+        "person_emp_exp",
+        "loan_amnt",
+        "loan_int_rate",
+        "loan_percent_income",
+        "cb_person_cred_hist_length",
+        "credit_score",
+        "person_gender_male",
+        "person_education_Bachelor",
+        "person_education_Doctorate",
+        "person_education_High School",
+        "person_education_Master",
+        "person_home_ownership_OTHER",
+        "person_home_ownership_OWN",
+        "person_home_ownership_RENT",
+        "loan_intent_EDUCATION",
+        "loan_intent_HOMEIMPROVEMENT",
+        "loan_intent_MEDICAL",
+        "loan_intent_PERSONAL",
+        "loan_intent_VENTURE",
+        "previous_loan_defaults_on_file_Yes"
+    ],
+    "num_features": 22,
+    "num_trees": 800
+}

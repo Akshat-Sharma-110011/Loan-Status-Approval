@@ -57,7 +57,7 @@ def load_model_info(file_path: str) -> dict:
         logging.debug(f"Model info contents: {model_info}")
 
         # Log key model info details
-        logging.info(f"Run ID: {model_info.get('run_id')}")
+        logging.info(f"Run ID: {model_info.get('mlflow_run_id')}")
         logging.info(f"Model path: {model_info.get('model_path')}")
 
         return model_info
@@ -82,8 +82,14 @@ def register_model(model_name: str, model_info: dict):
     logging.info(f"Starting registration process for model: {model_name}")
 
     try:
-        # Construct model URI
-        model_uri = f"runs:/{model_info['run_id']}/{model_info['model_path']}"
+        # Clean the model path by removing any relative path indicators
+        model_path = model_info['model_path']
+        # Remove './' prefix if it exists
+        if model_path.startswith('./'):
+            model_path = model_path[2:]
+
+        # Construct model URI with the cleaned path
+        model_uri = f"runs:/{model_info['mlflow_run_id']}/{model_path}"
         logging.info(f"Model URI constructed: {model_uri}")
 
         # Register the model
@@ -105,6 +111,27 @@ def register_model(model_name: str, model_info: dict):
 
     except mlflow.exceptions.MlflowException as e:
         logging.error(f"MLflow error during model registration: {e}")
+
+        # Add more detailed error handling
+        if "RESOURCE_DOES_NOT_EXIST" in str(e):
+            logging.error("The specified run ID or artifact path doesn't exist. Verify the run ID and model path.")
+        elif "INVALID_PARAMETER_VALUE" in str(e):
+            logging.error("Invalid parameter value. Check the model URI format and ensure the path is correct.")
+            logging.info("Attempting to get more details about the error...")
+            logging.error(f"Full error message: {str(e)}")
+
+            # Try to look up the run to check if it exists
+            try:
+                run = mlflow.get_run(model_info['mlflow_run_id'])
+                logging.info(f"Run exists with ID: {model_info['mlflow_run_id']}")
+
+                # List artifacts in the run to help debug
+                client = mlflow.tracking.MlflowClient()
+                artifacts = client.list_artifacts(model_info['mlflow_run_id'])
+                logging.info(f"Available artifacts in run: {[a.path for a in artifacts]}")
+            except Exception as inner_e:
+                logging.error(f"Failed to get run details: {inner_e}")
+
         raise
 
     except Exception as e:
@@ -117,14 +144,14 @@ def main():
 
     try:
         # Define model info path
-        model_info_path = 'reports/experiment_info.json'
+        model_info_path = 'reports/model_evaluation_info.json'
         logging.info(f"Using model info path: {model_info_path}")
 
         # Load model info
         model_info = load_model_info(model_info_path)
 
         # Define model name
-        model_name = "my_model"
+        model_name = "Catboost_model"
         logging.info(f"Using model name: {model_name}")
 
         # Register the model

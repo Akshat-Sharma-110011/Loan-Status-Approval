@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Prediction Result</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>Loan Approval Predictor</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/#about"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="/#contact"><i class="fas fa-envelope"></i> Contact</a></li>
+                    <li><a href="/metrics" target="_blank"><i class="fas fa-chart-bar"></i> Metrics</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="result-main">
+            <section class="result-hero">
+                <div class="result-icon {% if status == 'Approved' %}approved{% else %}rejected{% endif %}">
+                    {% if status == 'Approved' %}
+                        <i class="fas fa-check-circle"></i>
+                    {% else %}
+                        <i class="fas fa-times-circle"></i>
+                    {% endif %}
+                </div>
+                <h2 class="result-title">Loan Application {{ status }}</h2>
+                <p class="result-confidence">Confidence: {{ confidence }}</p>
+                <div class="result-actions">
+                    <a href="/" class="btn btn-primary"><i class="fas fa-redo"></i> Try Another Prediction</a>
+                </div>
+            </section>
+
+            <section class="result-details">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-list-alt"></i> Application Details</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="results-grid">
+                            <!-- Personal Information -->
+                            <div class="result-section">
+                                <h4><i class="fas fa-user"></i> Personal Information</h4>
+                                <div class="result-items">
+                                    <div class="result-item">
+                                        <span class="result-label">Age:</span>
+                                        <span class="result-value">{{ input_data.person_age }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Gender:</span>
+                                        <span class="result-value">{{ input_data.person_gender }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Education:</span>
+                                        <span class="result-value">{{ input_data.person_education }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Annual Income:</span>
+                                        <span class="result-value">${{ "{:,.2f}".format(input_data.person_income) }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Employment Experience:</span>
+                                        <span class="result-value">{{ input_data.person_emp_exp }} years</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Home Ownership:</span>
+                                        <span class="result-value">{{ input_data.person_home_ownership }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loan Details -->
+                            <div class="result-section">
+                                <h4><i class="fas fa-money-bill-wave"></i> Loan Details</h4>
+                                <div class="result-items">
+                                    <div class="result-item">
+                                        <span class="result-label">Loan Amount:</span>
+                                        <span class="result-value">${{ "{:,.2f}".format(input_data.loan_amnt) }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Loan Purpose:</span>
+                                        <span class="result-value">{{ input_data.loan_intent }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Interest Rate:</span>
+                                        <span class="result-value">{{ input_data.loan_int_rate }}%</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Loan as % of Income:</span>
+                                        <span class="result-value">{{ input_data.loan_percent_income }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Credit Information -->
+                            <div class="result-section">
+                                <h4><i class="fas fa-credit-card"></i> Credit Information</h4>
+                                <div class="result-items">
+                                    <div class="result-item">
+                                        <span class="result-label">Credit History Length:</span>
+                                        <span class="result-value">{{ input_data.cb_person_cred_hist_length }} years</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Credit Score:</span>
+                                        <span class="result-value">{{ input_data.credit_score }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Previous Defaults:</span>
+                                        <span class="result-value">{{ input_data.previous_loan_defaults_on_file }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="result-explanation">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> What This Means</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="explanation-content">
+                            {% if status == 'Approved' %}
+                                <p>Congratulations! Based on the information provided, our AI model predicts that your loan application would be <strong>approved</strong> with {{ confidence }} confidence.</p>
+                                <div class="tips">
+                                    <h4>Next Steps:</h4>
+                                    <ul>
+                                        <li>Consider consulting with a financial advisor before taking on new debt</li>
+                                        <li>Compare interest rates from multiple lenders</li>
+                                        <li>Review the loan terms carefully before signing any agreements</li>
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <p>Based on the information provided, our AI model predicts that your loan application would be <strong>rejected</strong> with {{ confidence }} confidence.</p>
+                                <div class="tips">
+                                    <h4>Possible Factors:</h4>
+                                    <ul>
+                                        <li>High loan-to-income ratio</li>
+                                        <li>Credit score below lender requirements</li>
+                                        <li>Insufficient credit history length</li>
+                                        <li>Previous loan defaults</li>
+                                    </ul>
+
+                                    <h4>Tips to Improve Approval Chances:</h4>
+                                    <ul>
+                                        <li>Work on improving your credit score</li>
+                                        <li>Consider reducing the loan amount</li>
+                                        <li>Pay down existing debt</li>
+                                        <li>Save for a larger down payment</li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                            <div class="disclaimer">
+                                <p><strong>Disclaimer:</strong> This prediction is based on an AI model and should be used for informational purposes only. Actual loan approval decisions are made by financial institutions based on their specific criteria and policies.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Loan Approval Predictor</span>
+                </div>
+                <div class="footer-links">
+                    <a href="/">Home</a>
+                    <a href="/#about">About</a>
+                    <a href="/#contact">Contact</a>
+                    <a href="/metrics">Metrics</a>
+                </div>
+                <div class="footer-copyright">
+                    <p>&copy; 2025 Loan Approval Predictor. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
