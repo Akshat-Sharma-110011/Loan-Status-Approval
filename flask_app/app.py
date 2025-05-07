@@ -6,6 +6,7 @@ from catboost import CatBoostClassifier
 from prometheus_client import Counter, Histogram, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
 import os
 import time
+import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import the PreprocessingPipeline class to fix unpickling
 from src.data.data_transformation import PreprocessingPipeline
