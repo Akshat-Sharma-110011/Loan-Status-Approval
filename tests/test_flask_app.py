@@ -1,6 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from flask_app.app import app
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Import the PreprocessingPipeline class to fix unpickling
+from src.data.data_transformation import PreprocessingPipeline
 
 
 class LoanApprovalPredictorTests(unittest.TestCase):
