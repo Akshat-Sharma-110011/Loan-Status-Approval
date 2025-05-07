@@ -1,24 +1,31 @@
 {
     "model_type": "CatBoostClassifier",
-    "training_date": "2025-05-07 01:14:31",
+    "training_date": "2025-05-07 19:38:14",
     "model_version": "1.0",
     "metrics": {
-        "accuracy": 0.9311111111111111,
-        "precision": 0.8661749209694415,
-        "recall": 0.817910447761194,
-        "f1": 0.8413510747185261,
-        "roc_auc": 0.9761337091367199
+        "accuracy": 0.9302222222222222,
+        "precision": 0.8610240334378265,
+        "recall": 0.8199004975124378,
+        "f1": 0.8399592252803262,
+        "roc_auc": 0.9765989793521663
     },
     "parameters": {
-        "iterations": 800,
-        "learning_rate": 0.167,
+        "iterations": 600,
+        "learning_rate": 0.09069791143458081,
         "depth": 6,
-        "l2_leaf_reg": 3,
+        "l2_leaf_reg": 5.026670805382901,
         "loss_function": "Logloss",
+        "leaf_estimation_method": "Newton",
         "random_seed": 42,
         "verbose": 100,
+        "random_strength": 0.7226657998312077,
         "eval_metric": "AUC",
-        "early_stopping_rounds": 50
+        "bagging_temperature": 4.855931236523602,
+        "boosting_type": "Plain",
+        "bootstrap_type": "MVS",
+        "early_stopping_rounds": 145,
+        "grow_policy": "Depthwise",
+        "min_data_in_leaf": 48
     },
     "features": [
         "person_age",
@@ -45,5 +52,5 @@
         "previous_loan_defaults_on_file_Yes"
     ],
     "num_features": 22,
-    "num_trees": 800
+    "num_trees": 600
 }

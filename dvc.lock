@@ -101,13 +101,13 @@ stages:
       size: 9908752
     - path: src/model/model_building.py
       hash: md5
-      md5: 68783439a645a56efca5d64a4f162767
-      size: 12953
+      md5: 47c833d6eb2935d3b23e668f6d860ffa
+      size: 13276
     outs:
     - path: models/model/model.cbm
       hash: md5
-      md5: 14a7bdabeaf1b2a1b944a69f3c8e84b1
-      size: 901776
+      md5: 8b37b51a9b63042006cab11e23c6e312
+      size: 1246200
   model_evaluation:
     cmd: python src/model/model_evaluation.py
     deps:
@@ -117,8 +117,8 @@ stages:
       size: 1547502
     - path: models/model/model.cbm
       hash: md5
-      md5: 14a7bdabeaf1b2a1b944a69f3c8e84b1
-      size: 901776
+      md5: 8b37b51a9b63042006cab11e23c6e312
+      size: 1246200
     - path: src/model/model_evaluation.py
       hash: md5
       md5: 9e4ea58c5ce55beaf95ca61b3c060911
@@ -126,38 +126,38 @@ stages:
     outs:
     - path: reports/evaluation_metrics.json
       hash: md5
-      md5: 7efcb38d374dbb6f47b50a270d112729
-      size: 179
+      md5: ba3c3b1f78d755f38f90107b04361e0d
+      size: 180
     - path: reports/figures/confusion_matrix.png
       hash: md5
-      md5: 1688580edac5c41794afa5a11188fb4a
-      size: 20661
+      md5: 6d9ca57d16fb9f859a91ea90096ac57a
+      size: 20675
     - path: reports/figures/precision_recall_curve.png
       hash: md5
-      md5: 443f5fc59a475a2c29665f4b882c4f50
-      size: 23947
+      md5: 0fcc633caf43fb797626f09fa20bbd46
+      size: 24127
     - path: reports/figures/prediction_distribution.png
       hash: md5
-      md5: 5e1aca7ae5ac88749b9241c190a4cd1b
-      size: 27090
+      md5: f708de05fd5f249ef759de6f952cb9c7
+      size: 26553
     - path: reports/figures/roc_curve.png
       hash: md5
-      md5: 8092f3a18771929c529737cdf13cf6a7
-      size: 37196
+      md5: cfae25350e33138fb6afffb9579fa410
+      size: 37230
     - path: reports/model_evaluation_info.json
       hash: md5
-      md5: 0aad085528e582f64f0ac81376f1ac00
+      md5: 778137523bd619184957b177e54fbd6d
       size: 202
   register_model:
     cmd: python src/model/register_model.py
     deps:
     - path: models/model/model.cbm
       hash: md5
-      md5: 14a7bdabeaf1b2a1b944a69f3c8e84b1
-      size: 901776
+      md5: 8b37b51a9b63042006cab11e23c6e312
+      size: 1246200
     - path: reports/model_evaluation_info.json
       hash: md5
-      md5: 0aad085528e582f64f0ac81376f1ac00
+      md5: 778137523bd619184957b177e54fbd6d
       size: 202
     - path: src/model/register_model.py
       hash: md5

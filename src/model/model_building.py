@@ -378,17 +378,24 @@ if __name__ == "__main__":
     TEST_PATH = './data/processed/test_processed.csv'
     OUTPUT_DIR = './models/model'
 
-    # Define model parameters (can be adjusted or loaded from config)
+    # Define model parameters with optimized values from hyperparameter tuning
     model_params = {
-        'iterations': 800,
-        'learning_rate': 0.167,
+        'iterations': 600,
+        'learning_rate': 0.09069791143458081,
         'depth': 6,
-        'l2_leaf_reg': 3,
+        'l2_leaf_reg': 5.026670805382901,
         'loss_function': 'Logloss',
         'eval_metric': 'AUC',
         'random_seed': 42,
-        'early_stopping_rounds': 50,
-        'verbose': 100
+        'early_stopping_rounds': 145,
+        'verbose': 100,
+        'random_strength': 0.7226657998312077,
+        'bagging_temperature': 4.855931236523602,
+        'boosting_type': 'Plain',
+        'bootstrap_type': 'MVS',
+        'grow_policy': 'Depthwise',
+        'leaf_estimation_method': 'Newton',
+        'min_data_in_leaf': 48
     }
 
     # Run the model building pipeline

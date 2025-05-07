@@ -29,6 +29,6 @@ jobs:
 
       - name: run pipeline
     #    env:
-     #     Loan-Status-Approval-CI: ${{ secrets.Loan-Status-Approval-CI }}
+    #      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
           dvc repro
