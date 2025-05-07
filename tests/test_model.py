@@ -6,37 +6,96 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import joblib
 from catboost import CatBoostClassifier
+import sys
+import time
 
 
 class TestCatBoostModel(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Set up DagsHub credentials for MLflow tracking
-        dagshub_token = os.getenv("MLFLOW_TRACKING_PASSWORD")
-        if not dagshub_token:
-            raise EnvironmentError("MLFLOW_TRACKING_PASSWORD environment variable is not set")
+        # Determine if we're running in CI
+        cls.is_ci = os.getenv("CI") == "true"
 
-        os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
-        os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+        # Set up model and pipeline paths
+        cls.model_path = 'models/model/model.cbm'
+        cls.preprocessor_path = 'models/preprocessor/preprocessing_pipeline.pkl'
 
-        dagshub_url = "https://dagshub.com"
-        repo_owner = "Akshat-Sharma-110011"
-        repo_name = "Loan-Status-Approval"
+        # First try loading local model directly (doesn't require MLflow)
+        try:
+            print("Attempting to load local CatBoost model file...")
+            local_model = CatBoostClassifier()
+            local_model.load_model(cls.model_path)
 
-        # Set up MLflow tracking URI
-        mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
+            # Load the preprocessing pipeline
+            cls.preprocessor = joblib.load(cls.preprocessor_path)
+            print("Preprocessing pipeline loaded successfully")
 
-        # Load the CatBoost model from MLflow model registry
-        cls.model_name = "Catboost_model"
-        cls.model_version = cls.get_latest_model_version(cls.model_name)
-        cls.model_uri = f'models:/{cls.model_name}/{cls.model_version}'
-        print(f"Loading model from: {cls.model_uri}")
-        cls.model = mlflow.pyfunc.load_model(cls.model_uri)
+            # Create a wrapper for the local model that mimics MLflow's pyfunc interface
+            class LocalModelWrapper:
+                def __init__(self, model):
+                    self.model = model
 
-        # Load the preprocessing pipeline
-        cls.preprocessor = joblib.load('models/preprocessor/preprocessing_pipeline.pkl')
-        print("Preprocessing pipeline loaded")
+                def predict(self, X):
+                    return self.model.predict(X)
+
+            cls.model = LocalModelWrapper(local_model)
+            print("Using local model file instead of MLflow registry")
+
+        except Exception as local_error:
+            print(f"Failed to load local model: {str(local_error)}")
+
+            # If local loading fails and we're not in CI, try MLflow
+            if not cls.is_ci:
+                print("Attempting to load from MLflow registry...")
+                try:
+                    # Set up DagsHub credentials for MLflow tracking
+                    dagshub_token = os.getenv("MLFLOW_TRACKING_PASSWORD")
+                    if not dagshub_token:
+                        raise EnvironmentError("MLFLOW_TRACKING_PASSWORD environment variable is not set")
+
+                    os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+                    os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+
+                    dagshub_url = "https://dagshub.com"
+                    repo_owner = "Akshat-Sharma-110011"
+                    repo_name = "Loan-Status-Approval"
+
+                    # Set up MLflow tracking URI
+                    mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
+
+                    # Load the CatBoost model from MLflow model registry
+                    cls.model_name = "Catboost_model"
+                    cls.model_version = cls.get_latest_model_version(cls.model_name)
+                    cls.model_uri = f'models:/{cls.model_name}/{cls.model_version}'
+                    print(f"Loading model from: {cls.model_uri}")
+
+                    # Add retry logic for MLflow model loading
+                    max_retries = 3
+                    retry_delay = 5  # seconds
+
+                    for attempt in range(max_retries):
+                        try:
+                            cls.model = mlflow.pyfunc.load_model(cls.model_uri)
+                            break
+                        except Exception as e:
+                            if attempt < max_retries - 1:
+                                print(f"Attempt {attempt + 1} failed. Retrying in {retry_delay} seconds...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2  # Exponential backoff
+                            else:
+                                raise e
+
+                    # Load the preprocessing pipeline
+                    cls.preprocessor = joblib.load(cls.preprocessor_path)
+                    print("Preprocessing pipeline loaded successfully")
+
+                except Exception as mlflow_error:
+                    print(f"Failed to load from MLflow: {str(mlflow_error)}")
+                    raise
+            else:
+                print("Running in CI environment - skipping MLflow registry connection")
+                raise RuntimeError("Cannot load model in CI environment") from local_error
 
         # Load holdout test data
         cls.holdout_data = pd.read_csv('data/processed/test_processed.csv')
@@ -181,9 +240,9 @@ class TestCatBoostModel(unittest.TestCase):
     def test_model_feature_importance(self):
         """Test if the model's feature importance can be extracted"""
         try:
-            # Load the actual CatBoost model (not the MLflow wrapper)
+            # Use direct model file path instead of trying to load it again
             catboost_model = CatBoostClassifier()
-            catboost_model.load_model('models/model/model.cbm')
+            catboost_model.load_model(self.model_path)
 
             # Get feature importance
             feature_names = self.preprocessor.get_feature_names_out()
