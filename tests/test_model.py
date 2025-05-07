@@ -8,6 +8,7 @@ import joblib
 from catboost import CatBoostClassifier
 import sys
 import time
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.data.data_transformation import PreprocessingPipeline
 
 
