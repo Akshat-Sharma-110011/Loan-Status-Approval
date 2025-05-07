@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Metrics Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        .metrics-header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .metrics-card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .metrics-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header class="metrics-header text-center">
+        <div class="container">
+            <h1>Loan Approval Model Metrics Dashboard</h1>
+            <p class="lead">Performance metrics for the machine learning model</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container">
+                <a class="navbar-brand" href="/">Home</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">Predictor</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/metrics">Metrics</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Metrics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metrics-card text-center">
+                    <p class="metric-label">Accuracy</p>
+                    <p class="metric-value">{{ "%.2f"|format(metrics.accuracy * 100) }}%</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metrics-card text-center">
+                    <p class="metric-label">Precision</p>
+                    <p class="metric-value">{{ "%.2f"|format(metrics.precision * 100) }}%</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metrics-card text-center">
+                    <p class="metric-label">Recall</p>
+                    <p class="metric-value">{{ "%.2f"|format(metrics.recall * 100) }}%</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metrics-card text-center">
+                    <p class="metric-label">F1 Score</p>
+                    <p class="metric-value">{{ "%.2f"|format(metrics.f1_score * 100) }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="metrics-card">
+                    <h4 class="text-center mb-3">Confusion Matrix</h4>
+                    <div class="chart-container">
+                        <canvas id="confusionMatrix"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="metrics-card">
+                    <h4 class="text-center mb-3">ROC Curve</h4>
+                    <div class="chart-container">
+                        <canvas id="rocCurve"></canvas>
+                    </div>
+                    <div class="text-center mt-3">
+                        <strong>AUC: {{ "%.2f"|format(metrics.roc_auc) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Details Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="metrics-card">
+                    <h4 class="mb-3">Model Information</h4>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Model Type</th>
+                                    <td>CatBoost Classifier</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Training Date</th>
+                                    <td>May 5, 2025</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Last Updated</th>
+                                    <td>May 7, 2025</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Total Predictions</th>
+                                    <td>{{ metrics.confusion_matrix[0][0] + metrics.confusion_matrix[0][1] + metrics.confusion_matrix[1][0] + metrics.confusion_matrix[1][1] }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center">
+        <div class="container">
+            <p>&copy; 2025 Loan Approval Predictor</p>
+        </div>
+    </footer>
+
+    <script>
+        // Confusion Matrix Chart
+        const confusionMatrix = document.getElementById('confusionMatrix').getContext('2d');
+        new Chart(confusionMatrix, {
+            type: 'bar',
+            data: {
+                labels: ['True Negative', 'False Positive', 'False Negative', 'True Positive'],
+                datasets: [{
+                    label: 'Count',
+                    data: [
+                        {{ metrics.confusion_matrix[0][0] }},
+                        {{ metrics.confusion_matrix[0][1] }},
+                        {{ metrics.confusion_matrix[1][0] }},
+                        {{ metrics.confusion_matrix[1][1] }}
+                    ],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(255, 159, 64, 0.6)',
+                        'rgba(54, 162, 235, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(54, 162, 235, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // ROC Curve - simplified representation
+        const rocCurve = document.getElementById('rocCurve').getContext('2d');
+        new Chart(rocCurve, {
+            type: 'line',
+            data: {
+                labels: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                datasets: [{
+                    label: 'ROC Curve',
+                    data: [0, 0.15, 0.35, 0.5, 0.65, 0.7, 0.8, 0.85, 0.9, 0.95, 1],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }, {
+                    label: 'Random Classifier',
+                    data: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                    borderColor: 'rgba(200, 200, 200, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'False Positive Rate'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'True Positive Rate'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

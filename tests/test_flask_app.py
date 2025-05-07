@@ -166,17 +166,38 @@ class LoanApprovalPredictorTests(unittest.TestCase):
         response = self.client.post('/predict', data=form_data)
         self.assertEqual(response.status_code, 400)  # Expect a 400 Bad Request
 
-    def test_metrics_page(self):
+    @patch('flask_app.app.get_metrics_data')
+    @patch('flask_app.app.render_template', return_value='Mocked metrics')
+    def test_metrics_page(self, mock_render_template, mock_get_metrics_data):
         """Test if the metrics page loads correctly"""
+        # Mock get_metrics_data to return dummy metrics
+        mock_get_metrics_data.return_value = {
+            'accuracy': 0.85,
+            'precision': 0.82,
+            'recall': 0.79,
+            'f1_score': 0.80,
+            'confusion_matrix': [[150, 30], [25, 200]],
+            'roc_auc': 0.89
+        }
+
         # Create a mock for the Prometheus generate_latest function
         with patch('flask_app.app.generate_latest',
-                   return_value=b'app_request_count{method="GET"} 1.0') as mock_generate:
-            # Mock the Content-Type header to simulate a Prometheus request
-            headers = {'Accept': 'application/openmetrics-text'}
-            response = self.client.get('/metrics', headers=headers)
-
+                   return_value=b'app_request_count{method="GET"} 1.0'):
+            # Test Prometheus metrics endpoint
+            prometheus_headers = {'Accept': 'application/openmetrics-text'}
+            response = self.client.get('/metrics', headers=prometheus_headers)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'app_request_count', response.data)
+
+            # Test HTML metrics page
+            standard_headers = {}
+            response = self.client.get('/metrics', headers=standard_headers)
+            self.assertEqual(response.status_code, 200)
+            # Since we've mocked render_template, we only need to check the response is as expected
+            self.assertEqual(response.data, b'Mocked metrics')
+
+            # Verify render_template was called correctly
+            mock_render_template.assert_called_with('metrics.html', metrics=mock_get_metrics_data.return_value)
 
     def test_404_error_handler(self):
         """Test if 404 errors are handled correctly"""
