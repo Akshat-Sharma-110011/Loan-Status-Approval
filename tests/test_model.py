@@ -8,6 +8,7 @@ import joblib
 from catboost import CatBoostClassifier
 import sys
 import time
+from src.data.data_transformation import PreprocessingPipeline
 
 
 class TestCatBoostModel(unittest.TestCase):
