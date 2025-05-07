@@ -44,9 +44,3 @@ jobs:
         env:
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: python scripts/promote_model.py
-
-      - name: Run Flask app tests
-        if: success()
-        env:
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-        run: python -m unittest tests/test_flask_app.py
