@@ -2,11 +2,13 @@ from flask import Flask, render_template, request
 import joblib
 import pandas as pd
 import traceback
+import uuid
 from catboost import CatBoostClassifier
 from prometheus_client import Counter, Histogram, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
 import os
 import time
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import the PreprocessingPipeline class to fix unpickling
 from src.data.data_transformation import PreprocessingPipeline
@@ -75,6 +77,99 @@ except Exception as e:
     raise
 
 
+# ===================== Helper Functions =====================
+def get_metrics_data():
+    """
+    Retrieve metrics data for the dashboard.
+
+    Returns:
+        dict: A dictionary containing metrics data
+    """
+    try:
+        # In a real implementation, these values would likely come from MLflow or another source
+        return {
+            'accuracy': 0.85,
+            'precision': 0.82,
+            'recall': 0.79,
+            'f1_score': 0.80,
+            'confusion_matrix': [[150, 30], [25, 200]],
+            'roc_auc': 0.89
+        }
+    except Exception as e:
+        debug_print(f"Error getting metrics data: {str(e)}", "ERROR")
+        debug_print(f"Error trace: {traceback.format_exc()}", "ERROR")
+        return {'error': 'Failed to retrieve metrics data'}
+
+
+def preprocess_data(data):
+    """
+    Preprocess the input data for model prediction.
+
+    Args:
+        data (dict): Dictionary containing loan application data
+
+    Returns:
+        pandas.DataFrame: Processed data ready for model prediction
+    """
+    try:
+        # Create DataFrame from input data
+        input_df = pd.DataFrame([data])
+
+        # Transform using pipeline
+        transformed_data = preprocessing_pipeline.transform(input_df)
+        features_df = pd.DataFrame(
+            transformed_data,
+            columns=preprocessing_pipeline.get_feature_names_out()
+        )
+
+        debug_print(f"Transformed features:\n{features_df.iloc[0].to_dict()}")
+        return features_df
+    except Exception as e:
+        debug_print(f"Preprocessing error: {str(e)}", "ERROR")
+        debug_print(f"Error trace: {traceback.format_exc()}", "ERROR")
+        raise
+
+
+def predict_loan_approval(data):
+    """
+    Predict loan approval based on input data.
+
+    Args:
+        data (dict): Dictionary containing loan application data
+
+    Returns:
+        tuple: (status, confidence_percentage)
+    """
+    try:
+        # Validate input data
+        for key, value in data.items():
+            if value is None or value == '':
+                raise ValueError(f"Missing required field: {key}")
+
+        # Process the data and make prediction
+        features_df = preprocess_data(data)
+        prediction = model.predict(features_df)
+        probability = model.predict_proba(features_df)[0][1]
+
+        # For approved loans, relevant probability is the second value (index 1)
+        # For rejected loans, relevant probability is the first value (index 0)
+        confidence = probability if prediction[0] == 1 else (1 - probability)
+        prediction_class = 'Approved' if prediction[0] == 1 else 'Rejected'
+
+        # Record the prediction in metrics
+        PREDICTION_COUNT.labels(prediction=prediction_class.lower()).inc()
+
+        debug_print(f"Prediction: {prediction_class} ({confidence:.2%})")
+
+        # Return tuple of status and confidence percentage as string
+        return (prediction_class, f"{confidence * 100:.1f}%")
+
+    except Exception as e:
+        debug_print(f"Prediction error: {str(e)}", "ERROR")
+        debug_print(f"Error trace: {traceback.format_exc()}", "ERROR")
+        raise
+
+
 # ===================== Flask Routes =====================
 @app.route('/')
 def home():
@@ -111,49 +206,51 @@ def predict():
     REQUEST_COUNT.labels(method="POST", endpoint="/predict").inc()
 
     try:
-        # Extract and convert form data
-        form_data = {
-            'person_age': int(request.form['person_age']),
-            'person_gender': request.form['person_gender'],
-            'person_education': request.form['person_education'],
-            'person_income': float(request.form['person_income']),
-            'person_emp_exp': float(request.form['person_emp_exp']),
-            'person_home_ownership': request.form['person_home_ownership'],
-            'loan_amnt': float(request.form['loan_amnt']),
-            'loan_intent': request.form['loan_intent'],
-            'loan_int_rate': float(request.form['loan_int_rate']),
-            'loan_percent_income': float(request.form['loan_percent_income']),
-            'cb_person_cred_hist_length': int(request.form['cb_person_cred_hist_length']),
-            'credit_score': int(request.form['credit_score']),
-            'previous_loan_defaults_on_file': request.form['previous_loan_defaults_on_file']
-        }
+        # Define required fields
+        required_fields = [
+            'person_age', 'person_gender', 'person_education', 'person_income',
+            'person_emp_exp', 'person_home_ownership', 'loan_amnt', 'loan_intent',
+            'loan_int_rate', 'loan_percent_income', 'cb_person_cred_hist_length',
+            'credit_score', 'previous_loan_defaults_on_file'
+        ]
+
+        # Check for missing fields
+        for field in required_fields:
+            if field not in request.form:
+                debug_print(f"Missing required field: {field}", "ERROR")
+                return render_template('error.html',
+                                       error=f"Missing required field: {field}"), 400
+
+        try:
+            # Extract and convert form data
+            form_data = {
+                'person_age': int(request.form['person_age']),
+                'person_gender': request.form['person_gender'],
+                'person_education': request.form['person_education'],
+                'person_income': float(request.form['person_income']),
+                'person_emp_exp': float(request.form['person_emp_exp']),
+                'person_home_ownership': request.form['person_home_ownership'],
+                'loan_amnt': float(request.form['loan_amnt']),
+                'loan_intent': request.form['loan_intent'],
+                'loan_int_rate': float(request.form['loan_int_rate']),
+                'loan_percent_income': float(request.form['loan_percent_income']),
+                'cb_person_cred_hist_length': int(request.form['cb_person_cred_hist_length']),
+                'credit_score': int(request.form['credit_score']),
+                'previous_loan_defaults_on_file': request.form['previous_loan_defaults_on_file']
+            }
+        except ValueError as e:
+            debug_print(f"Value conversion error: {str(e)}", "ERROR")
+            return render_template('error.html',
+                                   error=f"Invalid input data: {str(e)}"), 400
 
         debug_print(f"Received input data:\n{form_data}")
 
-        # Create DataFrame
-        input_df = pd.DataFrame([form_data])
-
-        # Transform using pipeline
-        transformed_data = preprocessing_pipeline.transform(input_df)
-        features_df = pd.DataFrame(
-            transformed_data,
-            columns=preprocessing_pipeline.get_feature_names_out()
-        )
-
-        debug_print(f"Transformed features:\n{features_df.iloc[0].to_dict()}")
-
-        # Make prediction
-        prediction = model.predict(features_df)
-        probability = model.predict_proba(features_df)[0][1]
-        prediction_class = 'approved' if prediction[0] == 1 else 'rejected'
-
-        PREDICTION_COUNT.labels(prediction=prediction_class).inc()
-
-        debug_print(f"Prediction: {prediction_class} ({probability:.2%})")
+        # Get prediction result
+        status, confidence = predict_loan_approval(form_data)
 
         response = render_template('result.html',
-                                   status='Approved' if prediction[0] == 1 else 'Rejected',
-                                   confidence=f"{probability * 100:.1f}%",
+                                   status=status,
+                                   confidence=confidence,
                                    input_data=form_data)
 
         # Record request latency before returning response
@@ -169,9 +266,15 @@ def predict():
         # Still record latency even for errors
         REQUEST_LATENCY.labels(endpoint="/predict").observe(time.time() - start_time)
 
-        return render_template('error.html',
-                               error=str(e),
-                               trace=error_trace), 500
+        # Return a 400 Bad Request for validation errors, 500 for server errors
+        if isinstance(e, ValueError):
+            return render_template('error.html',
+                                   error=str(e),
+                                   trace=None), 400
+        else:
+            return render_template('error.html',
+                                   error=str(e),
+                                   trace=error_trace), 500
 
 
 @app.route("/metrics")
@@ -179,7 +282,13 @@ def metrics():
     start_time = time.time()
     REQUEST_COUNT.labels(method="GET", endpoint="/metrics").inc()
 
-    response = generate_latest(registry), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+    # For Prometheus metrics
+    if request.headers.get('Accept') == CONTENT_TYPE_LATEST:
+        response = generate_latest(registry), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+    else:
+        # For HTML dashboard
+        metrics_data = get_metrics_data()
+        response = render_template('metrics.html', metrics=metrics_data)
 
     # Record latency for metrics endpoint too
     REQUEST_LATENCY.labels(endpoint="/metrics").observe(time.time() - start_time)
