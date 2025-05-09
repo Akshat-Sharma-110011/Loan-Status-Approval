@@ -176,5 +176,7 @@ prometheus_client
 catboost
 imbalanced-learn
 seaborn
+gunicorn
+
 
 -e .
