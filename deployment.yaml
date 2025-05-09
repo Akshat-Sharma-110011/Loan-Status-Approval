@@ -32,6 +32,35 @@ spec:
             secretKeyRef:
               name: capstone-secret
               key: MLFLOW_TRACKING_PASSWORD
+        - name: MLFLOW_TRACKING_USERNAME
+          value: "Akshat-Sharma-110011"
+        - name: MLFLOW_TRACKING_TOKEN
+          value: "268f8944c99d48868fa3235eb38ea909e929c70c"
+        - name: PYTHONPATH
+          value: "/app:/app/src"
+        - name: FLASK_APP
+          value: "app.py"
+        - name: FLASK_ENV
+          value: "production"
+        - name: DEBUG_MODE
+          value: "true"
+        # Add health check probes
+        readinessProbe:
+          httpGet:
+            path: /health  # Make sure this endpoint exists in your Flask app
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health  # Make sure this endpoint exists in your Flask app
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
 
 ---
 apiVersion: v1

@@ -1,21 +1,33 @@
-from flask import Flask, render_template, request
-import joblib
-import pandas as pd
+# At the top of your app.py file, modify the import section:
+import os
+import sys
+import time
+import datetime
 import traceback
 import uuid
+
+# First, ensure the application directory is in the Python path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from flask import Flask, render_template, request, jsonify
+import joblib
+import pandas as pd
 from catboost import CatBoostClassifier
 from prometheus_client import Counter, Histogram, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
-import os
-import time
-import sys
-import datetime
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append('/app')
-# Import the PreprocessingPipeline class to fix unpickl
+# Import the PreprocessingPipeline explicitly
 from src.data.data_transformation import PreprocessingPipeline
 
 app = Flask(__name__)
+
+# Add health check endpoint for Kubernetes probes
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Kubernetes probes"""
+    return jsonify({"status": "healthy"}), 200
+
+# Rest of the file remains the same...
 
 # ===================== MLflow Configuration =====================
 DAGSHUB_USERNAME = "Akshat-Sharma-110011"

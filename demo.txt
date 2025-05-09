@@ -1,0 +1,179 @@
+Dockerfile:
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies (only if needed; skip if pure Python)
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     build-essential \
+#     && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY flask_app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy only necessary app files and folders
+COPY src/__init__.py /app/src/__init__.py
+COPY src/logger/__init__.py /app/src/logger/__init__.py
+COPY src/data/__init__.py /app/src/data/__init__.py
+COPY src/data/data_transformation.py /app/src/data/data_transformation.py
+COPY flask_app/app.py /app/app.py
+COPY models/model/model.cbm /app/models/model/model.cbm
+COPY models/preprocessor/preprocessing_pipeline.pkl /app/models/preprocessor/preprocessing_pipeline.pkl
+COPY flask_app/templates /app/templates
+COPY flask_app/static /app/static
+
+# Expose port
+EXPOSE 5000
+
+# Run app
+#CMD ["python", "app.py"]
+
+# Production option (optional; comment out above CMD if using this)
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
+
+
+ci.yaml:
+name: CI Pipeline
+
+on: push
+
+jobs:
+  project-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: run pipeline
+        env:
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        run: |
+          dvc repro
+
+      - name: Run model tests
+        env:
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        run: |
+          python -m unittest tests/test_model.py
+
+      - name: Promote model to production
+        if: success()
+        env:
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        run: python scripts/promote_model.py
+
+      - name: Login to AWS ECR
+        if: success()
+        run: |
+            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws configure set region ${{ secrets.AWS_REGION }}
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Build Docker image
+        run: |
+            docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+
+      - name: Tag Docker image
+        run: |
+            docker tag ${{ secrets.ECR_REPOSITORY }}:latest \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+
+
+      - name: Check Docker Authentication
+        run: docker info
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+
+      - name: Set Up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name loan-app-cluster
+
+      - name: Create Kubernetes Secret
+        run: |
+          kubectl create secret generic capstone-secret \
+            --from-literal=MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f deployment.yaml
+
+
+
+deployment.yaml:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loan-status-proj
+  labels:
+    app: loan-status-proj
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: loan-status-proj
+  template:
+    metadata:
+      labels:
+        app: loan-status-proj
+    spec:
+      containers:
+      - name: loan-status-proj
+        image: 302511180857.dkr.ecr.us-east-1.amazonaws.com/loan-status-proj
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1"
+        env:
+        - name: MLFLOW_TRACKING_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: capstone-secret
+              key: MLFLOW_TRACKING_PASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loan-status-proj-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: loan-status-proj
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
