@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loan-status-proj
+  labels:
+    app: loan-status-proj
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: loan-status-proj
+  template:
+    metadata:
+      labels:
+        app: loan-status-proj
+    spec:
+      containers:
+      - name: loan-status-proj
+        image: 302511180857.dkr.ecr.us-east-1.amazonaws.com/loan-status-proj
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1"
+        env:
+        - name: MLFLOW_TRACKING_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: capstone-secret
+              key: MLFLOW_TRACKING_PASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loan-status-proj-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: loan-status-proj
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
