@@ -175,5 +175,6 @@ zipp==3.19.2
 prometheus_client
 catboost
 imbalanced-learn
+seaborn
 
 -e .
