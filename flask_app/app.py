@@ -12,7 +12,7 @@ import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append('/app')
-# Import the PreprocessingPipeline class to fix unpickling
+# Import the PreprocessingPipeline class to fix unpickl
 from src.data.data_transformation import PreprocessingPipeline
 
 app = Flask(__name__)
