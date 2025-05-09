@@ -5,6 +5,8 @@ __pycache__/
 secret.txt
 local_s3
 patterns.txt
+data/interim/
+data/processed/
 
 # C extensions
 *.so
