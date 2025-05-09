@@ -174,5 +174,6 @@ zc.lockfile==3.0.post1
 zipp==3.19.2
 prometheus_client
 catboost
+imbalanced-learn
 
 -e .
