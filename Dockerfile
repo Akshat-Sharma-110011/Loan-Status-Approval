@@ -16,11 +16,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/logs
 
 # Copy application files
-COPY src /app/src
-COPY models /app/models
+COPY src/ /app/src/
+COPY models/ /app/models/
 COPY flask_app/app.py /app/app.py
-COPY flask_app/templates /app/templates
-COPY flask_app/static /app/static
+COPY flask_app/templates/ /app/templates/
+COPY flask_app/static/ /app/static/
 
 # Make sure application directory is in PYTHONPATH
 ENV PYTHONPATH="/app:${PYTHONPATH}"
