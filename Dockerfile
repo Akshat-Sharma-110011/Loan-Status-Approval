@@ -27,7 +27,7 @@ COPY flask_app/static /app/static
 EXPOSE 5000
 
 # Run app
-CMD ["python", "app.py"]
+#CMD ["python", "app.py"]
 
 # Production option (optional; comment out above CMD if using this)
-#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
