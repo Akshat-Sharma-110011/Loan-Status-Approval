@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/logs
 
 # Copy application files
-COPY src/ /app/src/
+Copy src/data/__init__.py /app/src/data/__init__.py
+COPY src/data/data_transformation.py /app/src/data/data_transformation.py
 COPY models/ /app/models/
 COPY flask_app/app.py /app/app.py
 COPY flask_app/templates/ /app/templates/
