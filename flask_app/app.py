@@ -97,72 +97,83 @@ def metrics():
     start_time = time.time()
     REQUEST_COUNT.labels(method="GET", endpoint="/metrics").inc()
 
-    # For Prometheus metrics - this is what Prometheus/Grafana will use
-    if request.headers.get('Accept') == CONTENT_TYPE_LATEST:
-        response = generate_latest(registry)
-        return response, 200, {"Content-Type": CONTENT_TYPE_LATEST}
-    else:
-        # For HTML dashboard - a simplified version that shows Prometheus metrics
-        try:
-            # Extract metrics data properly from Prometheus Counters
-            request_total = 0
-            request_by_endpoint = {}
+    try:
+        # Generate the latest metrics
+        metrics_data = generate_latest(registry)
 
-            # Process request count metrics
-            for key, counter in REQUEST_COUNT._metrics.items():
-                # The key is typically a tuple of labels like ('GET', '/predict')
-                method, endpoint = key
-                count_value = counter._value.get()  # Get the actual counter value
-                request_total += count_value
+        # For Prometheus scraping - this should be the default response
+        # Check if specifically requesting Prometheus format or if no specific format is requested
+        if (request.headers.get('Accept') == CONTENT_TYPE_LATEST or
+                'text/html' not in request.headers.get('Accept', '')):
+            response = metrics_data
+            content_type = CONTENT_TYPE_LATEST
+        else:
+            # For HTML dashboard - when accessed from a browser
+            try:
+                # Extract metrics data properly from Prometheus Counters
+                request_total = 0
+                request_by_endpoint = {}
 
-                # Group by endpoint for display
-                endpoint_label = f"{endpoint}"
-                if endpoint_label not in request_by_endpoint:
-                    request_by_endpoint[endpoint_label] = 0
-                request_by_endpoint[endpoint_label] += count_value
+                # Process request count metrics
+                for key, counter in REQUEST_COUNT._metrics.items():
+                    # The key is typically a tuple of labels like ('GET', '/predict')
+                    method, endpoint = key
+                    count_value = counter._value.get()  # Get the actual counter value
+                    request_total += count_value
 
-            # Process prediction count metrics
-            prediction_total = 0
-            prediction_by_type = {}
+                    # Group by endpoint for display
+                    endpoint_label = f"{endpoint}"
+                    if endpoint_label not in request_by_endpoint:
+                        request_by_endpoint[endpoint_label] = 0
+                    request_by_endpoint[endpoint_label] += count_value
 
-            for key, counter in PREDICTION_COUNT._metrics.items():
-                # The key is a tuple with one element (the prediction type)
-                prediction_type = key[0]  # e.g., 'approved' or 'rejected'
-                count_value = counter._value.get()
-                prediction_total += count_value
-                prediction_by_type[prediction_type] = count_value
+                # Process prediction count metrics
+                prediction_total = 0
+                prediction_by_type = {}
 
-            # Sort dictionaries for consistent display
-            request_by_endpoint = dict(sorted(request_by_endpoint.items()))
-            prediction_by_type = dict(sorted(prediction_by_type.items()))
+                for key, counter in PREDICTION_COUNT._metrics.items():
+                    # The key is a tuple with one element (the prediction type)
+                    prediction_type = key[0]  # e.g., 'approved' or 'rejected'
+                    count_value = counter._value.get()
+                    prediction_total += count_value
+                    prediction_by_type[prediction_type] = count_value
 
-            # Simple metric counts from Prometheus data
-            metrics_data = {
-                'request_counts': {
-                    'total': request_total,
-                    'endpoints': request_by_endpoint
-                },
-                'prediction_counts': {
-                    'total': prediction_total,
-                    'types': prediction_by_type
+                # Sort dictionaries for consistent display
+                request_by_endpoint = dict(sorted(request_by_endpoint.items()))
+                prediction_by_type = dict(sorted(prediction_by_type.items()))
+
+                # Simple metric counts from Prometheus data
+                metrics_data = {
+                    'request_counts': {
+                        'total': request_total,
+                        'endpoints': request_by_endpoint
+                    },
+                    'prediction_counts': {
+                        'total': prediction_total,
+                        'types': prediction_by_type
+                    }
                 }
-            }
 
-            # Include current timestamp for the "Last Updated" display
-            current_time = datetime.datetime.now()
+                # Include current timestamp for the "Last Updated" display
+                current_time = datetime.datetime.now()
 
-            response = render_template('metrics.html', metrics=metrics_data, now=current_time)
-        except Exception as e:
-            debug_print(f"Error rendering metrics dashboard: {str(e)}", "ERROR")
-            debug_print(f"Error trace: {traceback.format_exc()}", "ERROR")
-            return render_template('error.html',
-                                   error=f"Failed to generate metrics dashboard: {str(e)}",
-                                   trace=traceback.format_exc()), 500
+                response = render_template('metrics.html', metrics=metrics_data, now=current_time)
+                content_type = 'text/html'
+            except Exception as e:
+                debug_print(f"Error rendering metrics dashboard: {str(e)}", "ERROR")
+                debug_print(f"Error trace: {traceback.format_exc()}", "ERROR")
+                return render_template('error.html',
+                                       error=f"Failed to generate metrics dashboard: {str(e)}",
+                                       trace=traceback.format_exc()), 500
+    except Exception as e:
+        debug_print(f"Error generating metrics: {str(e)}", "ERROR")
+        return str(e), 500
 
-    # Record latency for metrics endpoint too
+    # Record latency for metrics endpoint
     REQUEST_LATENCY.labels(endpoint="/metrics").observe(time.time() - start_time)
 
-    return response
+    # Return the appropriate response with the correct content type
+    return response, 200, {"Content-Type": content_type}
 
 def preprocess_data(data):
     """
