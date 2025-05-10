@@ -37,7 +37,7 @@ spec:
         - name: MLFLOW_TRACKING_TOKEN
           value: "268f8944c99d48868fa3235eb38ea909e929c70c"
         - name: PYTHONPATH
-          value: "/app:/app/src"
+          value: "/app"
         - name: FLASK_APP
           value: "app.py"
         - name: FLASK_ENV
@@ -47,7 +47,7 @@ spec:
         # Add health check probes
         readinessProbe:
           httpGet:
-            path: /health  # Make sure this endpoint exists in your Flask app
+            path: /health
             port: 5000
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -55,7 +55,7 @@ spec:
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /health  # Make sure this endpoint exists in your Flask app
+            path: /health
             port: 5000
           initialDelaySeconds: 60
           periodSeconds: 20
