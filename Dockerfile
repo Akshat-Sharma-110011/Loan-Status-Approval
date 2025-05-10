@@ -25,6 +25,7 @@ COPY flask_app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files with explicit paths
+Copy src/logger/__init__.py /app/src/logger/__init__.py
 COPY src/data/data_transformation.py /app/src/data/data_transformation.py
 COPY models/model/ /app/models/model/
 COPY models/preprocessor/ /app/models/preprocessor/
