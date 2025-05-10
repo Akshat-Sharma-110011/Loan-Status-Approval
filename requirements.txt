@@ -177,6 +177,6 @@ catboost
 imbalanced-learn
 seaborn
 gunicorn
-
+cloudpickle
 
 -e .
