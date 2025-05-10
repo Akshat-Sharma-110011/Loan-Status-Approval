@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import yaml
-import joblib
+import cloudpickle  # Changed from joblib to cloudpickle
 import os
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -486,9 +486,10 @@ def create_and_save_preprocessing_pipeline(train_data_path, test_data_path, outp
         process_and_save_data(preprocessor, train_data_path, train_processed_path, is_train=True)
         logger.info(f"Processed training data saved to {train_processed_path}")
 
-        # Now save the fitted pipeline
-        joblib.dump(preprocessor, pipe_path)
-        logger.info(f"Preprocessing pipeline saved to {pipe_path}")
+        # Now save the fitted pipeline using cloudpickle instead of joblib
+        with open(pipe_path, 'wb') as f:
+            cloudpickle.dump(preprocessor, f)
+        logger.info(f"Preprocessing pipeline saved to {pipe_path} using cloudpickle")
 
         # Process and save test data
         test_processed_path = os.path.join(processed_data_dir, 'test_transformed.csv')
