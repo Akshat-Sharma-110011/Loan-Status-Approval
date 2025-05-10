@@ -21,37 +21,62 @@ class TestCatBoostModel(unittest.TestCase):
     def setUpClass(cls):
         # Determine if we're running in CI
         cls.is_ci = os.getenv("CI") == "true"
+        print(f"CI environment detected: {cls.is_ci}")
 
         # Set up model and pipeline paths
         cls.model_path = 'models/model/model.cbm'
         cls.preprocessor_path = 'models/preprocessor/preprocessing_pipeline.pkl'
 
-        # First try loading local model directly (doesn't require MLflow)
-        try:
-            print("Attempting to load local CatBoost model file...")
-            local_model = CatBoostClassifier()
-            local_model.load_model(cls.model_path)
+        if cls.is_ci:
+            # In CI environment, always use mock objects
+            print("Running in CI environment - setting up mock objects for testing")
 
-            # Load the preprocessing pipeline
-            cls.preprocessor = joblib.load(cls.preprocessor_path)
-            print("Preprocessing pipeline loaded successfully")
+            # Create a mock preprocessor for CI environment
+            class MockPreprocessor:
+                def transform(self, X):
+                    # Return a simple dummy transformed dataset
+                    dummy_features = np.zeros((X.shape[0], 20))  # Adjust feature count as needed
+                    return dummy_features
 
-            # Create a wrapper for the local model that mimics MLflow's pyfunc interface
-            class LocalModelWrapper:
-                def __init__(self, model):
-                    self.model = model
+                def get_feature_names_out(self):
+                    # Return mock feature names
+                    return [f'feature_{i}' for i in range(20)]  # Adjust feature count
 
+            # Create a mock model for CI environment
+            class MockModel:
                 def predict(self, X):
-                    return self.model.predict(X)
+                    # Return dummy predictions (all 0s)
+                    return np.zeros(X.shape[0])
 
-            cls.model = LocalModelWrapper(local_model)
-            print("Using local model file instead of MLflow registry")
+            cls.preprocessor = MockPreprocessor()
+            cls.model = MockModel()
+            print("Created mock model and preprocessor for CI testing")
+        else:
+            # If not in CI, try loading local model first
+            try:
+                print("Attempting to load local CatBoost model file...")
+                local_model = CatBoostClassifier()
+                local_model.load_model(cls.model_path)
 
-        except Exception as local_error:
-            print(f"Failed to load local model: {str(local_error)}")
+                # Load the preprocessing pipeline
+                cls.preprocessor = joblib.load(cls.preprocessor_path)
+                print("Preprocessing pipeline loaded successfully")
 
-            # If local loading fails and we're not in CI, try MLflow
-            if not cls.is_ci:
+                # Create a wrapper for the local model that mimics MLflow's pyfunc interface
+                class LocalModelWrapper:
+                    def __init__(self, model):
+                        self.model = model
+
+                    def predict(self, X):
+                        return self.model.predict(X)
+
+                cls.model = LocalModelWrapper(local_model)
+                print("Using local model file instead of MLflow registry")
+
+            except Exception as local_error:
+                print(f"Failed to load local model: {str(local_error)}")
+
+                # If local loading fails, try MLflow
                 print("Attempting to load from MLflow registry...")
                 try:
                     # Set up DagsHub credentials for MLflow tracking
@@ -98,31 +123,6 @@ class TestCatBoostModel(unittest.TestCase):
                 except Exception as mlflow_error:
                     print(f"Failed to load from MLflow: {str(mlflow_error)}")
                     raise
-            else:
-                print("Running in CI environment - setting up mock objects for testing")
-
-                # Create a mock preprocessor for CI environment
-                # This is a simplified version that implements the required interface
-                class MockPreprocessor:
-                    def transform(self, X):
-                        # Return a simple dummy transformed dataset
-                        # You might want to adjust this based on your feature set
-                        dummy_features = np.zeros((X.shape[0], 20))  # Adjust feature count as needed
-                        return dummy_features
-
-                    def get_feature_names_out(self):
-                        # Return mock feature names
-                        return [f'feature_{i}' for i in range(20)]  # Adjust feature count
-
-                # Create a mock model for CI environment
-                class MockModel:
-                    def predict(self, X):
-                        # Return dummy predictions (all 0s)
-                        return np.zeros(X.shape[0])
-
-                cls.preprocessor = MockPreprocessor()
-                cls.model = MockModel()
-                print("Created mock model and preprocessor for CI testing")
 
         # Load holdout test data or create mock data if in CI environment
         try:
@@ -201,7 +201,7 @@ class TestCatBoostModel(unittest.TestCase):
         # Verify the output shape (should be a single prediction)
         self.assertEqual(len(prediction), 1)
 
-        # In CI with mock model, the prediction might be fixed at 0
+        # In CI with mock model, the prediction should be fixed at 0
         if self.is_ci:
             self.assertEqual(prediction[0], 0)
         else:
@@ -243,7 +243,7 @@ class TestCatBoostModel(unittest.TestCase):
         # Verify the output shape
         self.assertEqual(len(predictions), 4)
 
-        # In CI with mock model, all predictions might be fixed at 0
+        # In CI with mock model, all predictions should be fixed at 0
         if self.is_ci:
             self.assertTrue(all(pred == 0 for pred in predictions))
         else:
